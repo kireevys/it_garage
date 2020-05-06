@@ -1,0 +1,6 @@
+version: "2"
+services:
+  it-garage:
+    image: kireevys/it-garage:test_0
+    ports:
+    - "8080:8080"
