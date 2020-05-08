@@ -32,12 +32,7 @@ jobs:
         run: |
           cd app
           coverage run manage.py test
-          ls -a | grep cover
       - name: Tests report
         run: |
-          pwd
-          ls -a | grep cover
+          cd app
           coverage report
-
-      - name: Clean coverage
-        run: rm ./.coverage
