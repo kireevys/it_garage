@@ -21,6 +21,10 @@ jobs:
       # Чекаутим код
       - uses: actions/checkout@master
       # Устанавливаем python нужной версии
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install requirements
         # Устанавливаем зависимости
         run: pip install -r app/requirements.txt
