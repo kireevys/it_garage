@@ -34,6 +34,10 @@ jobs:
           coverage run manage.py test
           ls -a | grep cover
       - name: Tests report
-        run: coverage report
+        run: |
+          pwd
+          ls -a | grep cover
+          coverage report
+
       - name: Clean coverage
         run: rm ./.coverage
