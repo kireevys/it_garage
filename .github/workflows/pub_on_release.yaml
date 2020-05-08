@@ -38,10 +38,10 @@ jobs:
         run: app/manage.py test
 
   publish:
-    LOGIN: ${{ secrets.DOCKER_LOGIN }}
     needs: [run_tests]
     env:
       NAME: ${{ secrets.DOCKER_NAME }}
+      LOGIN: ${{ secrets.DOCKER_LOGIN }}
     steps:
       - name: Login to docker.io
         run:  echo ${{ secrets.DOCKER_PWD }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
