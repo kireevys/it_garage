@@ -1,8 +1,17 @@
 name: Deploy
 
+#on:
+# release:
+#   types: [published]
+
 on:
- release:
-   types: [published]
+  push:
+    tags:
+      - '!refs/tags/*'
+    branches:
+      - '*'
+    pull_request:
+      branches: [ master ]
 
 jobs:
   run_tests:
