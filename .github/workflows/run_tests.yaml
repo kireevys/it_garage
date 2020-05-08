@@ -36,6 +36,3 @@ jobs:
         run: |
           cd app
           coverage report
-
-      - name: Clean coverage
-        run: rm ./.coverage
