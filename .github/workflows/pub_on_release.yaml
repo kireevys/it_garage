@@ -2,31 +2,16 @@ name: Deploy
 
 
 on:
-  push:
+  release:
+    types: [published]
+  pull_request:
+    types:
+      - assigned
     # Publish `master` as Docker `latest` image.
     branches:
       - master
-
-    # Publish `v1.2.3` tags as releases.
     tags:
       - v*
-
-  # Run tests for PRs to master.
-  pull_request:
-    branches: [ master ]
-
-#on:
-# release:
-#   types: [published]
-#
-#on:
-#  push:
-#    tags:
-#      - '!refs/tags/*'
-#    branches:
-#      - '*'
-#    pull_request:
-#      branches: [ master ]
 
 jobs:
   run_tests:
@@ -74,14 +59,12 @@ jobs:
           # Strip "v" prefix from tag name
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
 
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=latest
-
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-
           docker build -t $IMAGE_ID:$VERSION -f Dockerfile .
+          # Push as v* - tag
           docker push $IMAGE_ID:$VERSION
+          # Use Docker `latest` tag convention
+          docker tag $IMAGE_ID:$VERSION $IMAGE_ID:latest
+          docker push $IMAGE_ID:latest
 
   deploy:
     needs: [run_tests, publish]
