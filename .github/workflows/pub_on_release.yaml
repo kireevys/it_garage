@@ -1,0 +1,97 @@
+name: Deploy
+
+
+on:
+  push:
+    # Publish `master` as Docker `latest` image.
+    branches:
+      - master
+
+    # Publish `v1.2.3` tags as releases.
+    tags:
+      - v*
+
+  # Run tests for PRs to master.
+  pull_request:
+    branches: [ master ]
+
+#on:
+# release:
+#   types: [published]
+#
+#on:
+#  push:
+#    tags:
+#      - '!refs/tags/*'
+#    branches:
+#      - '*'
+#    pull_request:
+#      branches: [ master ]
+
+jobs:
+  run_tests:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.7, 3.8]
+
+
+    steps:
+      # Чекаутим код
+      - uses: actions/checkout@master
+      # Устанавливаем python нужной версии
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install requirements
+        # Устанавливаем зависимости
+        run: pip install -r app/requirements.txt
+      - name: Run tests
+        run: app/manage.py test
+
+  publish:
+    needs: [run_tests]
+    runs-on: [ubuntu-latest]
+    env:
+      NAME: ${{ secrets.DOCKER_NAME }}
+      LOGIN: ${{ secrets.DOCKER_LOGIN }}
+
+    steps:
+      - name: Login to docker.io
+        run:  echo ${{ secrets.DOCKER_PWD }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+      - uses: actions/checkout@master
+      - name: Push image to docker.io
+        run: |
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          IMAGE_ID=$LOGIN/$NAME
+
+          echo "${{ github.ref }}"
+
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "master" ] && VERSION=latest
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+
+          docker build -t $IMAGE_ID:$VERSION -f Dockerfile .
+          docker push $IMAGE_ID:$VERSION
+
+  deploy:
+    needs: [run_tests, publish]
+    runs-on: [ubuntu-latest]
+
+    env:
+      LOGIN: ${{ secrets.DOCKER_LOGIN }}
+      NAME: ${{ secrets.DOCKER_NAME }}
+    steps:
+      - name: Bare
+        run: |
+          IMAGE_ID=$LOGIN/$NAME:latest
+          echo "$IMAGE_ID"

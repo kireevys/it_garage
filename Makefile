@@ -1,0 +1,2 @@
+makemigrations:
+	./manage.py makemigrations
