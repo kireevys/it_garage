@@ -1,8 +1,23 @@
 name: Deploy
 
+
 on:
- release:
-   types: [published]
+  push:
+    # Publish `master` as Docker `latest` image.
+    branches:
+      - master
+
+    # Publish `v1.2.3` tags as releases.
+    tags:
+      - v*
+
+  # Run tests for PRs to master.
+  pull_request:
+    branches: [ master ]
+
+#on:
+# release:
+#   types: [published]
 #
 #on:
 #  push:
@@ -48,13 +63,26 @@ jobs:
       - name: Login to docker.io
         run:  echo ${{ secrets.DOCKER_PWD }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
       - uses: actions/checkout@master
-      - name: Build image
-        run: docker build -t $LOGIN/$NAME:${GITHUB_REF:11} -f Dockerfile .
       - name: Push image to docker.io
-        run: docker push $LOGIN/$NAME:${GITHUB_REF:11}
+        run: |
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          IMAGE_ID=$LOGIN/$NAME
+
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "master" ] && VERSION=latest
+
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+
+          docker build -t $IMAGE_ID:$VERSION -f Dockerfile .
+          docker push $IMAGE_ID:$VERSION
 
   deploy:
-    needs: [run_tests]
+    needs: [run_tests, publish]
     runs-on: [ubuntu-latest]
 
     env:
@@ -62,4 +90,6 @@ jobs:
       NAME: ${{ secrets.DOCKER_NAME }}
     steps:
       - name: Bare
-        run: echo run deploy
+        run: |
+          IMAGE_ID=$LOGIN/$NAME:latest
+          echo "$IMAGE_ID"
