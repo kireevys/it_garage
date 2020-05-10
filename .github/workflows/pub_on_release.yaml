@@ -11,10 +11,6 @@ on:
     tags:
       - v*
 
-  # Run tests for PRs to master.
-  pull_request:
-    branches: [ master ]
-
 #on:
 # release:
 #   types: [published]
